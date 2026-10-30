@@ -11957,10 +11957,18 @@ struct ModFeatureListItem {
 // One feature switch for the Mods page and the dashboard's Quick Mods card.
 static void change_mod_feature(LauncherModel* m, const RecompLauncherCModFeature& feature,
                                bool enabled) {
-    if (!launcher_mod_enable_feature(m, &feature, enabled ? 1 : 0))
+    if (!launcher_mod_enable_feature(m, &feature, enabled ? 1 : 0)) {
         mod_note_error(m);
-    else if (enabled)
-        prompt_missing_mod_resources(m, feature.package_id, feature.id);
+    } else {
+        /* After a successful toggle last_error is empty, or carries the
+         * provider's notice of features it turned off (conflicts). */
+        const auto* mods = m->mods;
+        const char* notice = mods->last_error ? mods->last_error(mods->ctx) : nullptr;
+        std::snprintf(m->mod_status, sizeof(m->mod_status), "%s",
+                      notice ? notice : "");
+        if (enabled)
+            prompt_missing_mod_resources(m, feature.package_id, feature.id);
+    }
     if (m->has_bios && m->bios_verify_for_rom_cb)
         launcher_model_refresh_bios_status(m);
 }
