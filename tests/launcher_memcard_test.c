@@ -134,7 +134,42 @@ static void test_enabled_tristate(void) {
     expect(g_m.s.memcard_enabled[0] == 0, "enabled: toggle on -> off");
 }
 
+/* A mod can move the cards (Digimon World 1.5 keeps its own in saves/dw15/):
+ * the host's inspect follows the selection, so the panel must re-inspect
+ * when the selection changes, and only then. */
+static unsigned long long fake_revision;
+static unsigned long long fake_preparation_revision(void* ctx) {
+    (void)ctx;
+    return fake_revision;
+}
+
+static void test_refresh_follows_mod_selection(void) {
+    reset_model();
+    RecompLauncherCModProvider mods;
+    memset(&mods, 0, sizeof(mods));
+    mods.preparation_revision = fake_preparation_revision;
+    g_m.mods = &mods;
+    g_m.memcard_inspect_cb = fake_inspect;
+    safe_copy(g_m.s.memcard_path[0], sizeof(g_m.s.memcard_path[0]), "/saves/card1.mcd");
+    safe_copy(g_m.s.memcard_path[1], sizeof(g_m.s.memcard_path[1]), "/saves/card2.mcd");
+    fake_revision = 7;
+    launcher_model_refresh_memcards(&g_m);
+    expect(inspect_calls == 2, "refresh: first look inspects both cards");
+    inspect_used_blocks = 1;
+    launcher_model_refresh_memcards(&g_m);
+    expect(inspect_calls == 2, "refresh: an unchanged selection re-reads nothing");
+    fake_revision = 8;  /* a mod was ticked */
+    launcher_model_refresh_memcards(&g_m);
+    expect(inspect_calls == 4 && launcher_model_memcard_blocks_used(&g_m, 1) == 0x0001u,
+           "refresh: a selection change re-inspects and repaints both cards");
+    g_m.mods = NULL;
+    fake_revision = 9;
+    launcher_model_refresh_memcards(&g_m);
+    expect(inspect_calls == 4, "refresh: no mod provider, nothing to follow");
+}
+
 int main(void) {
+    test_refresh_follows_mod_selection();
     test_blocks_used_inspected_wins();
     test_blocks_used_empty_path_with_inspector_is_blank();
     test_blocks_used_declined_inspect_is_blank();

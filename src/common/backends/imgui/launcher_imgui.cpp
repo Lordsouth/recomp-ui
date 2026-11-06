@@ -2734,6 +2734,7 @@ void panel_game_draw(LauncherModel* m, const LauncherTheme* th) {
 // chrome + width). Vertical stack so nothing crowds at a controller-narrow
 // width: icon + label, block count, then a Browse/New button pair.
 void draw_memcard_slot(LauncherModel* m, const LauncherTheme& th, int slot) {
+    launcher_model_refresh_memcards(m);  // a mod toggle may have moved the cards
     ImGui::PushID(slot);
 
     const bool enabled = m->s.memcard_enabled[slot] != 0;

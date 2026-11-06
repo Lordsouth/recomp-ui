@@ -3880,6 +3880,16 @@ uint16_t launcher_model_memcard_blocks_used(const LauncherModel* m, int slot) {
     return (uint16_t)(slot == 0 ? 0x0025u : 0x0009u);
 }
 
+void launcher_model_refresh_memcards(LauncherModel* m) {
+    if (!m || !m->memcard_inspect_cb || !m->mods || !m->mods->preparation_revision)
+        return;
+    const unsigned long long rev = m->mods->preparation_revision(m->mods->ctx);
+    if (rev == m->memcard_mods_revision) return;
+    m->memcard_mods_revision = rev;
+    lm_inspect_memcard(m, 0);
+    lm_inspect_memcard(m, 1);
+}
+
 void launcher_model_set_memcard_path(LauncherModel* m, int slot, const char* path) {
     if (slot < 0 || slot > 1) return;
     safe_copy(m->s.memcard_path[slot], sizeof(m->s.memcard_path[slot]), path ? path : "");

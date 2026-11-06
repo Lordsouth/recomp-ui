@@ -228,6 +228,10 @@ typedef struct {
     bool        memcard_freshly_formatted[2];
     bool        memcard_valid[2];      // last inspect: image is a valid 128KB "MC" card
     bool        memcard_inspected[2];  // a host memcard_inspect callback populated blocks/valid
+    // Mods preparation_revision the cards were last inspected under: a mod
+    // can move the cards (Digimon World 1.5's saves/dw15/), so a selection
+    // change re-inspects them (launcher_model_refresh_memcards).
+    unsigned long long memcard_mods_revision;
 
     // ---- host verification/inspection callbacks (borrowed from GameInfo) ----
     // When non-NULL these drive the REAL disc verdict + memcard block usage
@@ -1053,6 +1057,10 @@ void launcher_model_set_memcard_path(LauncherModel* m, int slot, const char* pat
 // real inspect result, else blank for a freshly formatted card or for any slot
 // on a host that inspects real cards, else the SaveProbeFn / placeholder path.
 uint16_t launcher_model_memcard_blocks_used(const LauncherModel* m, int slot);
+// Re-inspect both cards when the mod selection changed since the last look
+// (the host's inspect callback follows mods that keep their own cards).
+// Cheap when nothing changed; the Save panel calls it every frame.
+void launcher_model_refresh_memcards(LauncherModel* m);
 // Enable/disable one card slot (mirrors the legacy launcher's per-card switch;
 // a disabled slot's SIO port reports no card present to the host once wired).
 void launcher_model_toggle_memcard(LauncherModel* m, int slot);
